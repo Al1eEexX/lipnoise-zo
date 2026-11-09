@@ -23,6 +23,7 @@ $$M \lesssim \varepsilon/D, \qquad \Delta_0 \lesssim \varepsilon^2/(\sqrt d\, M_
 | `experiments/e3_rounding.py` | реальное округление fp16/bf16/fp32 и стохастическое округление |
 | `results/` | графики (`.png`, `.pdf`) и сырые числа (`.json`) |
 | `notes/` | черновик теории в LaTeX |
+| `tutorial/` | учебные примеры к методичке с графиками (`python3 tutorial/ch4_acceleration.py`) |
 
 ## Как воспроизвести
 
