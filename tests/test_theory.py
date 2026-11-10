@@ -146,3 +146,20 @@ def test_theorem1_small_run():
         x = project_ball(x - step * two_point(oracle, x, gamma, e), 1.0)
     err = m_f * np.linalg.norm(avg / n_iter - c, axis=-1)
     assert (err <= eps).all()
+
+
+@pytest.mark.parametrize("d", [4, 64])
+def test_direction_aware_noise_has_sqrt_d_bias(d):
+    """Proposition 2(b): noise that sees the current direction gives bias d M E|<e,v>| ~ sqrt(2d/pi) M."""
+    rng = np.random.default_rng(6)
+    n, slope, gamma = 400_000, 0.1, 0.05
+    v = np.zeros(d)
+    v[0] = 1.0
+    e = random_directions(rng, (n,), d)
+    s = np.sign(e @ v)
+    x = np.zeros((n, d))
+    noise = lambda y: slope * s * ((y - x) * e).sum(-1)  # delta_k(y) = M sign<e_k,v> <e_k, y - x_k>
+    g = two_point(noise, x, gamma, e)
+    predicted = d * slope * expected_abs_coordinate(d)
+    assert g.mean(axis=0)[0] == pytest.approx(predicted, rel=0.02)
+    assert predicted > slope * np.sqrt(d) * 0.75

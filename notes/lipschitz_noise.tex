@@ -10,10 +10,14 @@
 \usepackage{indentfirst}
 
 \setlist{itemsep=2pt,topsep=4pt}
+\setlength{\emergencystretch}{3em}
 \theoremstyle{plain}
 \newtheorem{theorem}{Теорема}
 \newtheorem{lemma}{Лемма}
+\newtheorem{proposition}{Предложение}
 \newtheorem{corollary}{Следствие}
+\newtheorem{fact}{Факт}
+\renewcommand{\thefact}{\Alph{fact}}
 \theoremstyle{definition}
 \newtheorem{definition}{Определение}
 \theoremstyle{remark}
@@ -25,6 +29,7 @@
 \newcommand{\norm}[1]{\left\lVert #1\right\rVert}
 \newcommand{\abs}[1]{\left\lvert #1\right\rvert}
 \newcommand{\ip}[2]{\left\langle #1,#2\right\rangle}
+\newcommand{\F}{\mathcal F}
 
 \begin{document}
 
@@ -42,14 +47,14 @@
 \begin{equation}\label{eq:region}
   M\lesssim\frac\eps D\qquad\text{и}\qquad\Delta_0\lesssim\frac{\eps^2}{\sqrt d\,M_fD},
 \end{equation}
-причём \textbf{амплитуда шума может быть любой}. Липшицева часть допустима на уровне $\Theta(\eps/D)$ без зависимости от размерности.
+причём \textbf{амплитуда шума может быть любой}. Липшицева часть допустима на уровне $\Theta(\eps/D)$ без зависимости от размерности. Если же шум может «видеть» текущее случайное направление метода, смещение вырастает до $\sqrt d\,M$ (предложение~\ref{prop:adaptive}).
 
 \medskip
-\noindent\textbf{Положение в литературе} (подробно~--- раздел~\ref{sec:lit}). Для функций с ограниченным гессианом точный порог $\Theta(\eps/R)$ доказан в~\cite{LDT26}. Для негладкого двухточечного случая в~\cite{DTTG23} получено $\eps/(D\sqrt d)$ с гипотезой, что этот порог точен. Наш вклад скромный: мы показываем, что и в негладком случае порог равен $\Theta(\eps/D)$, то есть множитель $\sqrt d$ в~\cite{DTTG23}~--- артефакт анализа, и добавляем скачки $\Delta_0$, зависящие от $x$, и эксперименты с округлением. Технически это сочетание известных приёмов.
+\noindent\textbf{Положение в литературе} (подробно~--- раздел~\ref{sec:lit}). Для функций с ограниченным гессианом точный порог $\Theta(\eps/R)$ доказан в~\cite{LDT26}. Для негладкого двухточечного случая в~\cite{DTTG23} получено $\eps/(D\sqrt d)$ с гипотезой, что этот порог точен. Наш вклад скромный: мы показываем, что и в негладком случае порог равен $\Theta(\eps/D)$, то есть множитель $\sqrt d$ в~\cite{DTTG23}~--- артефакт анализа, объясняем, при какой модели шума он всё-таки появляется, добавляем скачки $\Delta_0$, зависящие от $x$, и эксперименты с округлением. Технически это сочетание известных приёмов.
 
 \section{Постановка}
 
-$Q\subset\R^d$~--- выпуклое замкнутое множество диаметра $D$; $f:\R^d\to\R$ выпукла и $M_f$-липшицева; $f^*=\min_Qf$. Оракул на запрос $x\in\R^d$ возвращает $\tilde f(x)=f(x)+\delta(x)$, где $\delta$~--- детерминированная функция, зафиксированная до запуска (шум не зависит от случайности метода).
+$Q\subset\R^d$, $d\ge2$,~--- выпуклое замкнутое множество диаметра $D$; $f:\R^d\to\R$ выпукла и $M_f$-липшицева на всём $\R^d$ (запросы могут выходить за $Q$ на расстояние $\gamma$); $f^*=\min_Qf$, $x^*\in\arg\min_Qf$. Оракул на запрос $x\in\R^d$ возвращает $\tilde f(x)=f(x)+\delta(x)$, где $\delta$~--- борелевская функция, зафиксированная до запуска (обобщение на шум, зависящий от истории,~--- предложение~\ref{prop:adaptive}).
 
 \begin{definition}
 Шум принадлежит классу $\mathcal N(M,\Delta_0)$, если
@@ -59,10 +64,58 @@ $Q\subset\R^d$~--- выпуклое замкнутое множество диа
 \end{definition}
 Частные случаи: $\mathcal N(0,2\Delta)$ содержит любой шум с $\abs\delta\le\Delta$ (ограниченный враждебный шум); $\mathcal N(M,0)$~--- $M$-липшицевы функции (амплитуда не ограничена); округление значений до сетки шага $q$ лежит в $\mathcal N(0,q)$. Модель~\cite[разд.~4]{GDN16}~--- липшицева часть плюс часть, не зависящая от $x$,~--- частный случай с $\Delta_0=0$ после сокращения в разности.
 
-\textbf{Метод.} Проекционный двухточечный ZO-SGD: $e_k\sim\mathrm{Unif}(S^{d-1})$,
+\textbf{Метод.} Проекционный двухточечный ZO-SGD: старт $x_0\in Q$, независимые $e_k\sim\mathrm{Unif}(S^{d-1})$,
 \begin{equation}\label{eq:method}
   g_k=\frac d{2\gamma}\bigl(\tilde f(x_k+\gamma e_k)-\tilde f(x_k-\gamma e_k)\bigr)e_k,\qquad x_{k+1}=\Pi_Q(x_k-hg_k),\qquad\bar x_N=\frac1N\sum_{k=0}^{N-1}x_k .
 \end{equation}
+Обозначим $\F_k=\sigma(e_0,\dots,e_{k-1})$; точка $x_k$ $\F_k$-измерима, а $e_k$ не зависит от $\F_k$.
+
+\section{Вспомогательные факты}
+
+Для функции $h:\R^d\to\R$ положим $h_\gamma(x)=\E_uh(x+\gamma u)$, $u\sim\mathrm{Unif}(B^d)$.
+
+\begin{fact}[сглаживание; {\cite[лемма~1]{FKM05}}, {\cite[теорема~1]{survey}}]\label{fact:smooth}
+Пусть $h$ непрерывна. Тогда $h_\gamma$ дифференцируема и
+\begin{equation}\label{eq:stokes}
+  \nabla h_\gamma(x)=\frac d\gamma\E_e\bigl[h(x+\gamma e)e\bigr]=\frac d{2\gamma}\E_e\bigl[(h(x+\gamma e)-h(x-\gamma e))e\bigr],\qquad e\sim\mathrm{Unif}(S^{d-1}).
+\end{equation}
+Если $h$ $M$-липшицева, то $h_\gamma$ тоже $M$-липшицева, поэтому $\norm{\nabla h_\gamma}\le M$. Если $h$ выпукла и $M$-липшицева, то $h_\gamma$ выпукла и $h\le h_\gamma\le h+\gamma M$.
+\end{fact}
+Первое равенство в~\eqref{eq:stokes}~--- формула Стокса для шара радиуса $\gamma$ (отношение площади сферы к объёму шара равно $d/\gamma$); второе получается заменой $e\mapsto-e$, сохраняющей распределение. Липшицевость $h_\gamma$: $\abs{h_\gamma(x)-h_\gamma(y)}\le\E_u\abs{h(x+\gamma u)-h(y+\gamma u)}\le M\norm{x-y}$. Неравенство $h\le h_\gamma$~--- Йенсен ($\E u=0$), $h_\gamma\le h+\gamma M$~--- липшицевость.
+
+\begin{fact}[концентрация на сфере; {\cite{ledoux}}, {\cite[лемма~9]{shamir17}}]\label{fact:sphere}
+Пусть $e\sim\mathrm{Unif}(S^{d-1})$, $d\ge2$. (a) Для любого $r$: $\E\ip er^2=\norm r^2/d$, поэтому $\E\abs{\ip er}\le\norm r/\sqrt d$. (b) Если $\varphi$ $L_\varphi$-липшицева на $S^{d-1}$ (в евклидовой метрике), то $\mathrm{Var}\,\varphi(e)\le L_\varphi^2/(d-1)$ (неравенство Пуанкаре; спектральная щель сферы равна $d-1$).
+\end{fact}
+
+\begin{lemma}[проекционный SGD со смещённым градиентом]\label{lem:sgd}
+Пусть $F:\R^d\to\R$ выпукла и дифференцируема, $x^*_F\in\arg\min_QF$, $x_0\in Q$. Пусть $g_k$ $\F_{k+1}$-измеримы и почти наверное
+\[
+  \E[g_k\mid\F_k]=\nabla F(x_k)+b_k,\qquad\norm{b_k}\le B,\qquad\E[\norm{g_k}^2\mid\F_k]\le G^2 .
+\]
+Тогда для $x_{k+1}=\Pi_Q(x_k-hg_k)$
+\begin{equation}\label{eq:sgd}
+  \E F(\bar x_N)-F(x^*_F)\le\frac{\norm{x_0-x^*_F}^2}{2hN}+\frac{hG^2}{2}+BD .
+\end{equation}
+\end{lemma}
+\begin{proof}
+Пусть $r_k=\norm{x_k-x^*_F}^2$. Так как $x^*_F\in Q$, проекция не увеличивает расстояние до $x^*_F$:
+\[
+  r_{k+1}\le\norm{x_k-hg_k-x^*_F}^2=r_k-2h\ip{g_k}{x_k-x^*_F}+h^2\norm{g_k}^2 .
+\]
+Возьмём $\E[\cdot\mid\F_k]$; $x_k$ и $x_k-x^*_F$ $\F_k$-измеримы, поэтому
+\[
+  \E[r_{k+1}\mid\F_k]\le r_k-2h\ip{\nabla F(x_k)+b_k}{x_k-x^*_F}+h^2G^2 .
+\]
+По выпуклости $\ip{\nabla F(x_k)}{x_k-x^*_F}\ge F(x_k)-F(x^*_F)$; по Коши--Буняковскому и так как $x_k,x^*_F\in Q$, $\abs{\ip{b_k}{x_k-x^*_F}}\le BD$. Значит,
+\[
+  2h\bigl(F(x_k)-F(x^*_F)\bigr)\le r_k-\E[r_{k+1}\mid\F_k]+h^2G^2+2hBD .
+\]
+Берём полное матожидание, суммируем по $k=0,\dots,N-1$ (сумма $r_k-r_{k+1}$ телескопируется и не больше $r_0$) и делим на $2hN$:
+\[
+  \frac1N\sum_{k=0}^{N-1}\E F(x_k)-F(x^*_F)\le\frac{r_0}{2hN}+\frac{hG^2}2+BD .
+\]
+Наконец, по неравенству Йенсена $F(\bar x_N)\le\frac1N\sum_kF(x_k)$.
+\end{proof}
 
 \section{Структура шума и свойства оценки}
 
@@ -70,13 +123,11 @@ $Q\subset\R^d$~--- выпуклое замкнутое множество диа
 Пусть $\delta\in\mathcal N(M,\Delta_0)$ и $\delta_L(x)=\inf_y\bigl[\delta(y)+M\norm{x-y}\bigr]$. Тогда $\delta_L$ $M$-липшицева и $0\le\delta-\delta_L\le\Delta_0$. Обратно, сумма $M$-липшицевой функции и функции со значениями в $[0,\Delta_0]$ лежит в $\mathcal N(M,\Delta_0)$.
 \end{lemma}
 \begin{proof}
-Подстановка $y=x$ даёт $\delta_L\le\delta$. По~\eqref{eq:class} $\delta(y)+M\norm{x-y}\ge\delta(x)-\Delta_0$ для всех $y$, откуда $\delta_L\ge\delta-\Delta_0>-\infty$. Нижняя грань семейства $M$-липшицевых функций $x\mapsto\delta(y)+M\norm{x-y}$, конечная хотя бы в одной точке, $M$-липшицева. Обратное утверждение очевидно.
+Подстановка $y=x$ даёт $\delta_L\le\delta$. По~\eqref{eq:class} $\delta(y)+M\norm{x-y}\ge\delta(x)-\Delta_0$ для всех $y$, откуда $\delta_L\ge\delta-\Delta_0>-\infty$. Нижняя грань семейства $M$-липшицевых функций $x\mapsto\delta(y)+M\norm{x-y}$, конечная хотя бы в одной точке, конечна всюду и $M$-липшицева. Обратно: если $\delta=\ell+\beta$ с $M$-липшицевой $\ell$ и $\beta\in[0,\Delta_0]$, то $\abs{\delta(x)-\delta(y)}\le M\norm{x-y}+\abs{\beta(x)-\beta(y)}\le M\norm{x-y}+\Delta_0$.
 \end{proof}
 
-Обозначим $h_\gamma(x)=\E_uh(x+\gamma u)$, $u\sim\mathrm{Unif}(B^d)$. Для непрерывной $h$ по формуле Стокса $\nabla h_\gamma(x)=\frac d\gamma\E_e[h(x+\gamma e)e]$, и если $h$ $M$-липшицева, то $h_\gamma$ тоже $M$-липшицева, поэтому $\norm{\nabla h_\gamma}\le M$.
-
 \begin{lemma}[смещение и второй момент]\label{lem:bias}
-Пусть $\delta\in\mathcal N(M,\Delta_0)$, $d\ge2$, и $g$~--- оценка~\eqref{eq:method} в точке $x$. Тогда
+Пусть $\delta\in\mathcal N(M,\Delta_0)$ борелевская, и $g=\frac d{2\gamma}\bigl(\tilde f(x+\gamma e)-\tilde f(x-\gamma e)\bigr)e$ при фиксированном $x$ и $e\sim\mathrm{Unif}(S^{d-1})$. Тогда
 \begin{equation}\label{eq:bias}
   \E_eg=\nabla f_\gamma(x)+b(x),\qquad\norm{b(x)}\le M+\frac{\sqrt d\,\Delta_0}{2\gamma},
 \end{equation}
@@ -85,45 +136,78 @@ $Q\subset\R^d$~--- выпуклое замкнутое множество диа
 \end{equation}
 \end{lemma}
 \begin{proof}
-Разложим $\delta=\delta_L+\delta_B$ по лемме~\ref{lem:decomp}, $\delta_B\in[0,\Delta_0]$. По формуле Стокса (в симметризованном виде) часть оценки, порождённая $f+\delta_L$, имеет среднее $\nabla f_\gamma+\nabla(\delta_L)_\gamma$, и $\norm{\nabla(\delta_L)_\gamma}\le M$. Для части $\beta$, порождённой $\delta_B$, при единичном $r$, так как $\abs{\delta_B(a)-\delta_B(b)}\le\Delta_0$ и $\E\abs{\ip er}\le1/\sqrt d$,
+Разложим $\delta=\delta_L+\delta_B$ по лемме~\ref{lem:decomp}: $\delta_L$ $M$-липшицева, $\delta_B=\delta-\delta_L$ борелевская со значениями в $[0,\Delta_0]$. Соответственно $g=g_1+g_2$, где $g_1$ построена по непрерывной функции $f+\delta_L$, а $g_2$~--- по $\delta_B$.
+
+\emph{Смещение.} По факту~\ref{fact:smooth}, применённому к $f$ и к $\delta_L$, $\E g_1=\nabla f_\gamma(x)+\nabla(\delta_L)_\gamma(x)$ и $\norm{\nabla(\delta_L)_\gamma(x)}\le M$. Для единичного $r$, так как $\abs{\delta_B(a)-\delta_B(b)}\le\Delta_0$, по факту~\ref{fact:sphere}(a)
 \[
-  \ip{\E\beta}r\le\frac d{2\gamma}\Delta_0\,\E\abs{\ip er}\le\frac{\sqrt d\Delta_0}{2\gamma}.
+  \abs{\ip{\E g_2}r}\le\frac d{2\gamma}\Delta_0\,\E\abs{\ip er}\le\frac{\sqrt d\,\Delta_0}{2\gamma}.
 \]
-Для второго момента $\norm g^2\le2\norm{g_1}^2+2\norm{g_2}^2$, где $g_1$ порождена $f+\delta_L$, а $g_2$~--- $\delta_B$. Функция $\varphi(e)=(f+\delta_L)(x+\gamma e)$ является $\gamma(M_f+M)$-липшицевой на сфере, и по неравенству Пуанкаре $\E\norm{g_1}^2\le\frac{d^2}{4\gamma^2}\cdot\frac{4\gamma^2(M_f+M)^2}{d-1}\le2d(M_f+M)^2$. Наконец, $\norm{g_2}^2\le\frac{d^2\Delta_0^2}{4\gamma^2}$.
+Супремум по $r$ даёт $\norm{\E g_2}\le\sqrt d\Delta_0/(2\gamma)$. Полагаем $b=\nabla(\delta_L)_\gamma(x)+\E g_2$.
+
+\emph{Второй момент.} $\norm g^2\le2\norm{g_1}^2+2\norm{g_2}^2$. Функция $\varphi(e)=(f+\delta_L)(x+\gamma e)$ является $\gamma(M_f+M)$-липшицевой на сфере, $\norm{g_1}^2=\frac{d^2}{4\gamma^2}(\varphi(e)-\varphi(-e))^2$ и $(\varphi(e)-\varphi(-e))^2\le2(\varphi(e)-\E\varphi)^2+2(\varphi(-e)-\E\varphi)^2$. Так как $-e$ распределён так же, как $e$, по факту~\ref{fact:sphere}(b)
+\[
+  \E\norm{g_1}^2\le\frac{d^2}{4\gamma^2}\cdot4\,\frac{\gamma^2(M_f+M)^2}{d-1}=\frac{d^2(M_f+M)^2}{d-1}\le2d(M_f+M)^2 .
+\]
+Наконец, $\norm{g_2}^2\le\frac{d^2}{4\gamma^2}\Delta_0^2$.
 \end{proof}
 
 \begin{remark}
-Смещение от липшицевой части не содержит ни $\sqrt d$, ни деления на $\gamma$, тогда как ограниченный шум даёт $\sqrt d\Delta_0/\gamma$. Численная проверка~--- эксперимент E1 и тесты в \texttt{tests/test\_theory.py}.
+Смещение от липшицевой части не содержит ни $\sqrt d$, ни деления на $\gamma$, тогда как скачки дают $\sqrt d\Delta_0/(2\gamma)$. Численная проверка~--- эксперимент E1 и тесты в файле \texttt{tests/\allowbreak test\_theory.py}.
 \end{remark}
 
 \section{Верхняя оценка}
 
 \begin{theorem}\label{th:upper}
-Пусть $\eps\le M_fD$, $\gamma=\eps/(3M_f)$, $h=D/(G\sqrt N)$ с $G^2=5d(M_f+M)^2$, и шум $\delta\in\mathcal N(M,\Delta_0)$ удовлетворяет
+Пусть выполнены предположения раздела~1, $\eps\le M_fD$, $\gamma=\eps/(3M_f)$, $G^2=5d(M_f+M)^2$, $h=D/(G\sqrt N)$, и шум $\delta\in\mathcal N(M,\Delta_0)$ удовлетворяет
 \begin{equation}\label{eq:upper-cond}
   M\le\frac{\eps}{6D},\qquad\Delta_0\le\frac{\eps^2}{9\sqrt d\,M_fD}.
 \end{equation}
 Тогда метод~\eqref{eq:method} после $N=\lceil45\,d(M_f+M)^2D^2/\eps^2\rceil$ итераций, то есть $T=2N$ вызовов оракула, выдаёт $\bar x_N\in Q$ с $\E f(\bar x_N)-f^*\le\eps$. Амплитуда шума в условия не входит.
 \end{theorem}
 \begin{proof}
-По~\eqref{eq:upper-cond} и $\eps\le M_fD$ имеем $\frac{d^2\Delta_0^2}{2\gamma^2}\le\frac{d\eps^2}{18D^2}\le d(M_f+M)^2$, поэтому по~\eqref{eq:moment} $\E\norm{g_k}^2\le G^2$. По~\eqref{eq:bias} $\norm{b}\le\frac\eps{6D}+\frac{\sqrt d\Delta_0}{2\gamma}\le\frac\eps{3D}=:B$. Применим основное неравенство для проекционного SGD со смещённым градиентом (методичка, утверждение~3.1) к выпуклой дифференцируемой функции $f_\gamma$ на $Q$ с минимумом $x^*_\gamma$: при $h=D/(G\sqrt N)$
+\emph{Шаг 1 (условные моменты).} Так как $e_k$ не зависит от $\F_k$, $x_k$ $\F_k$-измерима, а $\delta$ фиксирована, условное распределение $g_k$ при данном $\F_k$~--- это распределение оценки леммы~\ref{lem:bias} в точке $x_k$. Поэтому $\E[g_k\mid\F_k]=\nabla f_\gamma(x_k)+b(x_k)$ и
 \[
-  \E f_\gamma(\bar x_N)-f_\gamma(x^*_\gamma)\le\frac{DG}{\sqrt N}+BD\le\frac\eps3+\frac\eps3 .
+  \norm{b(x_k)}\le\frac\eps{6D}+\frac{\sqrt d\Delta_0}{2\gamma}\le\frac\eps{6D}+\frac{\sqrt d}{2}\cdot\frac{3M_f}{\eps}\cdot\frac{\eps^2}{9\sqrt dM_fD}=\frac\eps{3D}=:B .
 \]
-Наконец, $f\le f_\gamma$ (Йенсен) и $f_\gamma(x^*_\gamma)\le f_\gamma(x^*)\le f^*+\gamma M_f=f^*+\eps/3$.
+Аналогично $\frac{d^2\Delta_0^2}{2\gamma^2}=\frac{d\eps^2}{18D^2}\le\frac{dM_f^2}{18}\le d(M_f+M)^2$ (использовано $\eps\le M_fD$), так что $\E[\norm{g_k}^2\mid\F_k]\le5d(M_f+M)^2=G^2$.
+
+\emph{Шаг 2 (главная лемма).} Функция $F=f_\gamma$ выпукла и дифференцируема (факт~\ref{fact:smooth}). Лемма~\ref{lem:sgd} с $\norm{x_0-x^*_F}\le D$ и $h=D/(G\sqrt N)$ даёт
+\[
+  \E f_\gamma(\bar x_N)-\min_Qf_\gamma\le\frac{D^2}{2hN}+\frac{hG^2}{2}+BD=\frac{DG}{\sqrt N}+\frac\eps3\le\frac\eps3+\frac\eps3,
+\]
+так как $N\ge45d(M_f+M)^2D^2/\eps^2=9D^2G^2/\eps^2$.
+
+\emph{Шаг 3 (от $f_\gamma$ к $f$).} По факту~\ref{fact:smooth} $f\le f_\gamma$ и $\min_Qf_\gamma\le f_\gamma(x^*)\le f^*+\gamma M_f=f^*+\eps/3$. Складывая, получаем $\E f(\bar x_N)-f^*\le\eps$.
 \end{proof}
 
 \begin{remark}
-Число вызовов $T=O(d(M_f+M)^2D^2/\eps^2)$ оптимально по $d$ и $\eps$ (Duchi et al.\ 2015). Следующий шаг~--- батчированный ускоренный вариант с $N=O(d^{1/4}M_fD/\eps)$ раундов; для него нужна теорема об устойчивости ускоренного метода к аддитивному смещению при ограниченной траектории (методичка, §4.4).
+Число вызовов $T=O(d(M_f+M)^2D^2/\eps^2)$ оптимально по $d$ и $\eps$~\cite{duchi}. Константы осторожные: в эксперименте E4(a) с параметрами теоремы фактическая ошибка не превосходит $0{,}09\eps$. Батчированный ускоренный вариант с $O(d^{1/4}M_fD/\eps)$ раундами~--- следующий шаг; для него нужна устойчивость ускоренного метода к аддитивному смещению при ограниченной траектории.
+\end{remark}
+
+\begin{proposition}[шум, зависящий от истории]\label{prop:adaptive}
+(a) Пусть на шаге $k$ оракул использует свой шум $\delta_k\in\mathcal N(M,\Delta_0)$, выбранный по всей истории (то есть $\delta_k$ определяется $\F_k$), но не по текущему направлению $e_k$. Тогда утверждение теоремы~\ref{th:upper} сохраняется.
+
+(b) Если шум может зависеть от $e_k$, то уже при $\Delta_0=0$ смещение может достигать $dM\,\E\abs{\ip{e}{v}}\approx\sqrt{2d/\pi}\,M$: например, $\delta_k(x)=M\,\mathrm{sign}\ip{e_k}v\,\ip{e_k}{x-x_k}$ с единичным $v$ даёт $\E[g_k\mid\F_k]=\nabla f_\gamma(x_k)+dM\,\E\abs{\ip ev}\,v$.
+\end{proposition}
+\begin{proof}
+(a) В шаге 1 доказательства теоремы~\ref{th:upper} использовалось лишь то, что при фиксированной $\F_k$ шум~--- фиксированная функция класса $\mathcal N(M,\Delta_0)$, не зависящая от $e_k$; лемма~\ref{lem:bias} применяется условно. Остальное без изменений.
+
+(b) Функция $\delta_k$ $M$-липшицева. В точках $x_k\pm\gamma e_k$ она равна $\pm\gamma M\,\mathrm{sign}\ip{e_k}v$, поэтому шумовая часть оценки равна
+\[\frac d{2\gamma}\cdot2\gamma M\,\mathrm{sign}\ip{e_k}v\;e_k=dM\,\mathrm{sign}\ip{e_k}v\;e_k,\qquad\E\bigl[\mathrm{sign}\ip ev\,e\bigr]=\E\abs{\ip ev}\,v\]
+(второе равенство~--- по симметрии). Наконец, $d\,\E\abs{\ip ev}=d\,\Gamma(d/2)/(\sqrt\pi\,\Gamma((d+1)/2))\sim\sqrt{2d/\pi}$.
+\end{proof}
+
+\begin{remark}
+Предложение~\ref{prop:adaptive}(b) объясняет оценку $\sqrt d\,M_\delta$ из~\cite{DTTG23}: такой порядок смещения возможен, только если шум знает текущее случайное направление метода. Для шума, фиксированного заранее (как в~\cite{DTTG23}) или подстраивающегося лишь под прошлое, смещение не больше $M$.
 \end{remark}
 
 \section{Нижняя оценка по липшицевой части}
 
 \begin{theorem}\label{th:lower}
-Пусть $Q$~--- шар радиуса $\rho=D/2$ с центром в нуле, $\eps<M_f\rho$, и $M>2\eps/D$. Тогда для любого (рандомизированного, адаптивного) алгоритма с любым числом запросов в любых точках $\R^d$ найдутся выпуклая $M_f$-липшицева $f$ и шум $\delta\in\mathcal N(M,0)$, при которых $\E f(\hat x)-f^*>\eps$ для выхода $\hat x\in Q$.
+Пусть $Q$~--- шар радиуса $\rho=D/2$ с центром в нуле, $\eps<M_f\rho$, и $M>2\eps/D$. Тогда для любого алгоритма (рандомизированного, адаптивного, с любым конечным числом запросов в любых точках $\R^d$ и выходом $\hat x\in Q$) найдутся выпуклая $M_f$-липшицева $f$ и шум $\delta\in\mathcal N(M,0)$, при которых $\E f(\hat x)-f^*>\eps$.
 \end{theorem}
 \begin{proof}
-Возьмём $a\in(2\eps/D,\min\{M,M_f\}]$, единичный $u$ и $f_\pm(x)=\pm a\ip ux$, $\delta_\pm=-f_\pm$. Шум $a$-липшицев, оракул в обоих случаях всегда отвечает нулём, поэтому распределение $\hat x$ одинаково. Так как $\min_Qf_\pm=-a\rho$,
+Интервал $(2\eps/D,\min\{M,M_f\}]$ непуст, так как $M>2\eps/D$ и $M_f>\eps/\rho=2\eps/D$. Возьмём $a$ из него, единичный $u$ и $f_\pm(x)=\pm a\ip ux$, $\delta_\pm=-f_\pm$. Функции $f_\pm$ выпуклы и $a$-липшицевы, шум $a$-липшицев, то есть $\delta_\pm\in\mathcal N(M,0)$. Оракул в обоих случаях на любой запрос отвечает нулём, поэтому совместное распределение запросов, ответов и выхода $\hat x$ одинаково для $f_+$ и $f_-$. Так как $\min_Qf_\pm=-a\rho$,
 \[
   \E[f_+(\hat x)-f_+^*]+\E[f_-(\hat x)-f_-^*]=\E\bigl[a\ip u{\hat x}+a\rho-a\ip u{\hat x}+a\rho\bigr]=aD>2\eps,
 \]
@@ -131,26 +215,29 @@ $Q\subset\R^d$~--- выпуклое замкнутое множество диа
 \end{proof}
 
 \begin{corollary}
-Допустимый уровень липшицевой части равен $\Theta(\eps/D)$: теоремы~\ref{th:upper} и~\ref{th:lower} расходятся лишь в константе $12$, и порог не зависит от $d$ и от амплитуды. Для ограниченной части при $M=0$ нижняя оценка Ристески--Ли $\Delta_{\max}\lesssim\max\{\eps^2/(\sqrt dM_fD),\eps/d\}$ (с точностью до логарифмов) показывает, что условие на $\Delta_0$ в~\eqref{eq:upper-cond} неулучшаемо при не слишком малых $\eps$. Поэтому область~\eqref{eq:region} точна по обеим осям.
+Допустимый уровень липшицевой части равен $\Theta(\eps/D)$: теоремы~\ref{th:upper} и~\ref{th:lower} расходятся лишь в константе $12$, и порог не зависит от $d$ и от амплитуды. Для скачков при $M=0$ класс $\mathcal N(0,2\Delta)$ содержит ограниченный шум $\abs\delta\le\Delta$, для которого нижняя оценка~\cite{rl} даёт $\Delta_{\max}\lesssim\max\{\eps^2/(\sqrt dM_fD),\ \eps/d\}$ с точностью до логарифмов (для алгоритмов с полиномиальным числом запросов). При $\eps\gtrsim M_fD/\sqrt d$ первая ветвь больше, и условие на $\Delta_0$ в~\eqref{eq:upper-cond} точно с точностью до констант и логарифмов. В этом режиме область~\eqref{eq:region} точна по обеим осям.
 \end{corollary}
 
-\begin{remark}
-Принадлежность классу не единственна: шум малой амплитуды $\Delta$ лежит и в $\mathcal N(0,2\Delta)$. Поэтому для «рампы» высоты $\Delta$ и наклона $M$ шум безвреден, если \emph{либо} $M\lesssim\eps/D$, \emph{либо} $\Delta\lesssim\eps^2/(\sqrt dM_fD)$: область безвредности в плоскости $(\Delta,M)$ имеет форму буквы «Г». Это видно в эксперименте E2.
-\end{remark}
+\begin{proposition}[Г-образная область]\label{prop:ramp}
+«Рампа» $\psi(x)=\Delta\,\mathrm{clip}(M\ip ux/\Delta,-1,1)$ лежит и в $\mathcal N(M,0)$, и в $\mathcal N(0,2\Delta)$. Поэтому теорема~\ref{th:upper} применима к ней, если \emph{либо} $M\le\eps/(6D)$, \emph{либо} $2\Delta\le\eps^2/(9\sqrt dM_fD)$: область безвредности в плоскости $(\Delta,M)$ имеет форму буквы «Г».
+\end{proposition}
+\begin{proof}
+$\psi$~--- композиция $1$-липшицевой функции $\mathrm{clip}$, умноженной на $\Delta$, с $M/\Delta$-липшицевой функцией $x\mapsto M\ip ux/\Delta$, поэтому она $M$-липшицева; кроме того, $\abs\psi\le\Delta$, и $\abs{\psi(x)-\psi(y)}\le2\Delta$.
+\end{proof}
 
 \section{Связь с литературой}\label{sec:lit}
 
 \begin{itemize}
   \item \cite[разд.~4]{GDN16} (2016): шум~--- липшицева часть плюс часть, не зависящая от $x$; двухточечная схема; допустимость $\delta=O(\eps)$ выведена из условия $\norm{\nabla\E\delta(x+\tau\tilde s)}=O(\eps/R)$, то есть по сути из того же наблюдения, что и лемма~\ref{lem:bias}. Число вызовов $n^2M^2R^2/\eps^2$, оптимальность оставлена открытой (сноска 46).
-  \item \cite{DTTG23}: негладкие выпуклые и седловые задачи, двухточечная схема, $M_\delta$-липшицев шум (Assumption~2.3). Смещение оценено как $\sqrt d\,M_\delta$ (формула (62)), поэтому допустимо $M_\delta\lesssim\eps/(D\sqrt d)$. В приложении~B доказано лишь $M_{\max}\lesssim\eps/D$ (при дополнительных предположениях), и авторы пишут, что считают точным порог $\eps/(D\sqrt d)$.
+  \item \cite{DTTG23}: негладкие выпуклые и седловые задачи, двухточечная схема, $M_\delta$-липшицев шум (Assumption~2.3), фиксированный заранее. Смещение оценено как $\sqrt d\,M_\delta$ (формула (62)), поэтому допустимо $M_\delta\lesssim\eps/(D\sqrt d)$. В приложении~B доказано лишь $M_{\max}\lesssim\eps/D$ (при дополнительных предположениях), и авторы пишут, что считают точным порог $\eps/(D\sqrt d)$.
   \item \cite{LDT26} (октябрь 2026): функции гёльдеровой гладкости $\beta>2$ с ограниченным гессианом. Систематическая $M$-липшицева ошибка: для сильно выпуклых $M_{\max}=\Theta(\sqrt{\alpha\eps})$, для выпуклых $\eps/(16R)\le M_{\max}\le2\eps/R$ (теорема~5(b)); нижняя оценка~--- та же пара линейных функций, что в теореме~\ref{th:lower} (лемма~E.7). Верхняя оценка использует $L<\infty$.
 \end{itemize}
 
-\textbf{Что здесь нового.} (1) Точный порог $\Theta(\eps/D)$ для негладких функций в двухточечной схеме с оптимальным числом вызовов $O(dM_f^2D^2/\eps^2)$: это закрывает зазор $\sqrt d$ из~\cite{DTTG23} и опровергает их гипотезу; (2) класс $\mathcal N(M,\Delta_0)$ со скачками, зависящими от $x$, и Г-образная область безвредности; (3) эксперименты, в частности «мёртвая зона» при округлении. Пункты (1)--(2)~--- аккуратная заметка; пункт (3) пока без теории.
+\textbf{Что здесь нового.} (1) Точный порог $\Theta(\eps/D)$ для негладких функций в двухточечной схеме с оптимальным числом вызовов $O(dM_f^2D^2/\eps^2)$: это закрывает зазор $\sqrt d$ из~\cite{DTTG23} и опровергает их гипотезу; (2) объяснение, когда $\sqrt d$ всё-таки появляется (шум, знающий текущее направление, предложение~\ref{prop:adaptive}); (3) класс $\mathcal N(M,\Delta_0)$ со скачками, зависящими от $x$, и Г-образная область; (4) эксперименты, в частности закон мёртвой зоны при округлении. Пункты (1)--(3)~--- аккуратная заметка; пункт (4) пока без теории.
 
 \section{Эксперименты}
 
-Код: \texttt{lipzo/} (модели шума, оценка, метод), \texttt{tests/} (6 проверок лемм, 15 тестов), \texttt{experiments/} (воспроизведение одной командой \texttt{bash run\_all.sh}).
+Код: \texttt{lipzo/} (модели шума, оценка, метод), \texttt{tests/} (22 теста: численные проверки лемм, предложений и короткий прогон теоремы~1), \texttt{experiments/} (всё воспроизводится одной командой \texttt{bash run\_all.sh}). Подробные описания~--- \texttt{docs/experiments.md}.
 
 \paragraph{E1. Смещение в зависимости от размерности.} Шум направлен вдоль одной оси, поэтому среднее оценки вычисляется точно одномерной квадратурой (без Монте-Карло). Ступенька высоты $2\Delta$ даёт смещение, растущее как $\sqrt{2d/\pi}\,\Delta/\gamma$; липшицева рампа даёт смещение, ограниченное наклоном $M$ при всех $d$ (при $d\ge128$ отношение к $M$ равно $1{,}000$).
 
@@ -163,28 +250,37 @@ $Q\subset\R^d$~--- выпуклое замкнутое множество диа
 \paragraph{E3. Реальное округление.} $f(x)=1+\norm{x-c}_1/\sqrt d$ ($M_f=1$), $d=10$, $2\cdot10^4$ итераций; значения вычисляются в fp64, fp32, bf16, fp16 и fp16 со стохастическим округлением (случайный последний бит, как в~\cite[разд.~4]{GDN16}). Наблюдения:
 \begin{enumerate}
   \item Оценка худшего случая $M_f\gamma+D\sqrt d\Delta_0/(2\gamma)$ (пунктир) пессимистична на 2--3 порядка: при достаточно большом $\gamma$ округление практически безвредно.
-  \item При малом $\gamma$ механизм отказа другой: значения в $x\pm\gamma e$ округляются в одно число, оценка равна нулю, и метод стоит на месте («мёртвая зона»). Порог по $\gamma$ у bf16 в $8=2^3$ раза больше, чем у fp16~--- ровно разница мантисс; порядок порога $\gamma\sim\sqrt d\,\mathrm{ulp}/M_f$.
+  \item При малом $\gamma$ механизм отказа другой: значения в $x\pm\gamma e$ округляются в одно число, оценка равна нулю, и метод стоит на месте («мёртвая зона»). Порог по $\gamma$ у bf16 в $8=2^3$ раза больше, чем у fp16~--- ровно разница мантисс.
   \item Стохастическое округление сдвигает мёртвую зону примерно втрое и снижает итоговую ошибку; при совсем малых $\gamma$ мешает уже дисперсия $d^2q^2/\gamma^2$.
 \end{enumerate}
 
 \begin{center}\includegraphics[width=0.78\textwidth]{../results/e3_rounding.png}\end{center}
 
+\paragraph{E4. Проверка теорем 1 и 2.} (a) Теорема~\ref{th:upper} с её собственными константами ($\eps=0{,}2$, $D=2$, $M_f=1$, $d\in\{5,10,20,40\}$, $N$ от $2{,}3\cdot10^4$ до $1{,}9\cdot10^5$) на крутой ($a\norm{x-c}$, $a=1$) и пологой ($a=3\eps/D$) функциях, без шума и с шумом на пределе условий~\eqref{eq:upper-cond}: худшая по 8 запускам ошибка не превосходит $0{,}083\eps$, то есть оценка выполняется с запасом примерно в 12 раз. (b) Липшицев «встречный» шум на линейной функции: зависимость ошибки от $M/g_0$ одна и та же при $d=5,20,80$~--- порог не зависит от размерности. (c) Ступенчатый (ограниченный) шум: в координатах «амплитуда $\times\sqrt d$» пороги для разных $d$ почти совпадают, то есть порог ограниченного шума $\propto1/\sqrt d$.
+
+\begin{center}\includegraphics[width=\textwidth]{../results/e4_theorems.png}\end{center}
+
+\paragraph{E5. Закон мёртвой зоны.} $f(x)=1+\norm{x-c}_1/\sqrt d$ в fp16, $d\in\{4,\dots,128\}$, сетка из 71 значения $\gamma$. Порог $\gamma_{\mathrm{crit}}$~--- наименьший $\gamma$, при котором ZO-SGD за 3000 шагов вдвое уменьшает начальную ошибку. Эвристика: разность $f(x+\gamma e)-f(x-\gamma e)\approx2\gamma\ip{\nabla f}e\sim2\gamma M_f/\sqrt d$ должна превысить шаг округления $q$, откуда $\gamma_{\mathrm{crit}}\propto\sqrt d\,q/M_f$. Измеренный наклон $\log\gamma_{\mathrm{crit}}$ по $\log d$ равен $0{,}49$, а $\gamma_{\mathrm{crit}}\approx0{,}2\sqrt d\,q/M_f$ при всех $d$ от 4 до 128.
+
+\begin{center}\includegraphics[width=0.8\textwidth]{../results/e5_dead_zone.png}\end{center}
+
 \section{Следующие шаги и вопросы}
 
 \begin{enumerate}
   \item Ускоренный батчированный вариант теоремы~\ref{th:upper} (три критерия: $T$, $N$, допустимый шум).
-  \item Модель округления: доказать порог мёртвой зоны $\gamma\gtrsim\sqrt d\,q/M_f$ и оценку для случайного (не враждебного) округления, объясняющую E3.
-  \item Шум, зависящий от истории запросов: верна ли теорема~\ref{th:upper}, если липшицевость требуется только при фиксированной истории?
-  \item Формализация теоремы~\ref{th:upper} в LongTails. Основа~--- готовый Setup
-
-  \texttt{AdaptivePairedZerothOrder}, в котором условие $\abs\delta\le\Delta$ заменяется на~\eqref{eq:class}.
+  \item Модель округления: доказать закон мёртвой зоны $\gamma_{\mathrm{crit}}\asymp\sqrt d\,q/M_f$ (E5) и оценку для «почти случайного» округления, объясняющую E3.
+  \item Шум, видящий текущее направление: предложение~\ref{prop:adaptive}(b) даёт пример со смещением $\sqrt d M$; совпадает ли с ним верхняя оценка в этой модели?
+  \item Формализация теоремы~\ref{th:upper} в LongTails. Основа~--- готовый Setup \texttt{AdaptivePaired\allowbreak ZerothOrder}, в котором условие $\abs\delta\le\Delta$ заменяется на~\eqref{eq:class}.
 \end{enumerate}
 
-\textbf{Вопросы к А.\,В.~Гасникову:} (1) какая модель липшицева шума имелась в виду; (2) стоит ли оформить негладкий случай как короткую заметку или сразу двигаться к продолжению (теория округления, ускорение, шум, зависящий от истории); (3) нужен ли «кубик» адаптивности; (4) допустимо ли использовать LongTails в курсовой работе.
+\textbf{Вопросы к А.\,В.~Гасникову:} (1) какая модель липшицева шума имелась в виду; (2) стоит ли оформить негладкий случай как короткую заметку или сразу двигаться к продолжению (теория округления, ускорение); (3) нужен ли «кубик» адаптивности; (4) допустимо ли использовать LongTails в курсовой работе.
 
 \begin{thebibliography}{9}
 \bibitem{GDN16} А.\,В.~Гасников, П.\,Е.~Двуреченский, Ю.\,Е.~Нестеров. Стохастические градиентные методы с неточным оракулом. arXiv:1411.4218 (2016).
 \bibitem{survey} A.~Gasnikov et al. Randomized gradient-free methods in convex optimization. arXiv:2211.13566.
+\bibitem{FKM05} A.~Flaxman, A.~Kalai, H.~B.~McMahan. Online convex optimization in the bandit setting: gradient descent without a gradient. SODA 2005.
+\bibitem{shamir17} O.~Shamir. An optimal algorithm for bandit and zero-order convex optimization with two-point feedback. JMLR 18 (2017).
+\bibitem{ledoux} M.~Ledoux. The concentration of measure phenomenon. AMS, 2001.
 \bibitem{duchi} J.~Duchi, M.~Jordan, M.~Wainwright, A.~Wibisono. Optimal rates for zero-order convex optimization: the power of two function evaluations. IEEE Trans.\ Inf.\ Theory, 2015.
 \bibitem{rl} A.~Risteski, Y.~Li. Algorithms and matching lower bounds for approximately-convex optimization. NeurIPS 2016.
 \bibitem{DTTG23} D.~Dvinskikh, V.~Tominin, Y.~Tominin, A.~Gasnikov. Gradient-free optimization for non-smooth minimax problems with maximum value of adversarial noise. arXiv:2202.06114 (v3, 2023).
