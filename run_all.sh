@@ -6,3 +6,5 @@ python3 -m pytest -q
 python3 experiments/e1_bias.py
 python3 experiments/e2_phase.py
 python3 experiments/e3_rounding.py
+python3 experiments/e4_theorems.py
+python3 experiments/e5_dead_zone.py

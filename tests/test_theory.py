@@ -75,3 +75,74 @@ def test_lipschitz_envelope_decomposition():
     assert gap.min() >= -1e-12 and gap.max() <= delta0 + 1e-12
     lip = np.abs(np.diff(env)) / np.diff(grid)
     assert lip.max() <= slope * (1 + 1e-9)
+
+
+def test_ramp_belongs_to_both_classes():
+    """Remark after the corollary: a ramp of height amp and slope M lies in N(M, 0) and in N(0, 2 amp)."""
+    amp, slope = 0.3, 2.0
+    z = np.linspace(-1, 1, 2001)
+    phi = ramp_profile(z, amp, slope)
+    diff = np.abs(phi[:, None] - phi[None, :])
+    dist = np.abs(z[:, None] - z[None, :])
+    assert (diff <= slope * dist + 1e-12).all()
+    assert (diff <= 2 * amp + 1e-12).all()
+
+
+def test_lower_bound_oracle_is_blind():
+    """Theorem 2: f_plus + delta_plus and f_minus + delta_minus both answer 0 everywhere."""
+    rng = np.random.default_rng(3)
+    d, a = 7, 0.4
+    u = random_directions(rng, (), d)
+    y = rng.standard_normal((1000, d)) * 5
+    for sign in (+1, -1):
+        f = sign * a * (y @ u)
+        delta = -f
+        assert np.allclose(f + delta, 0.0)
+
+
+@pytest.mark.parametrize("d", [5, 40])
+def test_mixed_noise_bias_bound(d):
+    """Lemma 2: noise = M-Lipschitz part + jump of size delta0 gives bias <= M + sqrt(d) delta0 / (2 gamma)."""
+    slope, delta0, gamma = 0.05, 1e-3, 0.05
+    phi = lambda z: slope * z + delta0 * (z > 0)
+    bound = slope + np.sqrt(d) * delta0 / (2 * gamma)
+    worst = max(abs(aligned_noise_bias(phi, s, gamma, d)) for s in np.linspace(-2 * gamma, 2 * gamma, 41))
+    assert worst <= bound * (1 + 1e-6)
+
+
+@pytest.mark.parametrize("d", [5, 30])
+def test_mixed_noise_second_moment(d):
+    """Lemma 2: E||g||^2 <= 4 d (M_f + M)^2 + d^2 delta0^2 / (2 gamma^2)."""
+    rng = np.random.default_rng(4)
+    n, gamma, m_f, slope, delta0 = 200_000, 0.05, 1.0, 0.1, 2e-3
+    u = np.zeros(d)
+    u[0] = 1.0
+    c = 0.3 * random_directions(rng, (), d)
+    oracle = lambda y: m_f * np.linalg.norm(y - c, axis=-1) + slope * (y @ u) + delta0 * ((y @ u) > 0)
+    e = random_directions(rng, (n,), d)
+    g = two_point(oracle, np.zeros((n, d)), gamma, e)
+    second = (g * g).sum(axis=1).mean()
+    assert second <= 4 * d * (m_f + slope) ** 2 + d**2 * delta0**2 / (2 * gamma**2)
+
+
+def test_theorem1_small_run():
+    """Theorem 1 with its own constants reaches accuracy eps (d = 3, eps = 0.3)."""
+    from lipzo.methods import project_ball
+
+    rng = np.random.default_rng(5)
+    d, eps, m_f, D = 3, 0.3, 1.0, 2.0
+    M, delta0 = eps / (6 * D), eps**2 / (9 * np.sqrt(d) * m_f * D)
+    gamma = eps / (3 * m_f)
+    n_iter = int(np.ceil(45 * d * (m_f + M) ** 2 * D**2 / eps**2))
+    step = D / (np.sqrt(5 * d) * (m_f + M) * np.sqrt(n_iter))
+    c = np.array([0.3, -0.2, 0.1])
+    u = np.array([1.0, 0.0, 0.0])
+    oracle = lambda y: m_f * np.linalg.norm(y - c, axis=-1) + M * (y @ u) + delta0 * ((y @ u) > 0)
+    x = np.zeros((4, d))
+    avg = np.zeros_like(x)
+    for _ in range(n_iter):
+        avg += x
+        e = random_directions(rng, (4,), d)
+        x = project_ball(x - step * two_point(oracle, x, gamma, e), 1.0)
+    err = m_f * np.linalg.norm(avg / n_iter - c, axis=-1)
+    assert (err <= eps).all()
