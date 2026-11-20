@@ -79,7 +79,7 @@ We stress that the ingredients are known. The dimension-free bias bound is essen
 \toprule
 Noise model & Admissible level & Reference \\
 \midrule
-bounded, $|\delta|\le\Delta$ & $\Delta\lesssim\eps^2/(\sqrt dM_fD)$; tight for $\eps\gtrsim M_fD/\sqrt d$ & \citet{gasnikov2022power,risteski2016algorithms}\\
+bounded, $|\delta|\le\Delta$ & $\Delta\lesssim\eps^2/(\sqrt dM_fD)$; tight for $\eps\gtrsim M_fD/\sqrt d$ & \citet{gasnikov2022power,risteski2016algorithms,pasechnyuk2023upper}\\
 $M$-Lipschitz & $M\lesssim\eps/(\sqrt dD)$ & \citet{dvinskikh2022noisy,lobanov2024improved}\\
 $M$-Lipschitz, bounded Hessian of $f$ & $M=\Theta(\eps/D)$ & \citet{loginov2026minimax}\\
 \midrule
@@ -167,7 +167,7 @@ Pick $a\in(2\eps/D,\min\{M,M_f\}]$ and a unit vector $u$, and set $f_\pm(x)=\pm 
 The construction is the elementary core of \citet[Prop.~E.7]{loginov2026minimax}, which uses quadratic objectives and applies to any class containing them. Together, \cref{thm:upper,thm:lower} give:
 
 \begin{corollary}\label{cor:tight}
-In the nonsmooth two-point setting the admissible Lipschitz slope is $\Theta(\eps/D)$, independent of $d$ and of the noise amplitude (the constants differ by a factor $12$). For the jump part, $\cN(0,2\Delta)$ contains bounded noise, for which the lower bound of \citet{risteski2016algorithms} gives $\Delta_{\max}\lesssim\max\{\eps^2/(\sqrt dM_fD),\eps/d\}$ up to logarithms; hence for $\eps\gtrsim M_fD/\sqrt d$ condition \eqref{eq:cond} is tight in both parameters.
+In the nonsmooth two-point setting the admissible Lipschitz slope is $\Theta(\eps/D)$, independent of $d$ and of the noise amplitude (the constants differ by a factor $12$). For the jump part, $\cN(0,2\Delta)$ contains bounded noise, for which the lower bound of \citet{risteski2016algorithms}, made explicit for every fixed budget in \citet[Thm.~III.1]{pasechnyuk2023upper}, gives $\Delta_{\max}\lesssim\max\{\eps^2/(\sqrt dM_fD),\eps/d\}$ up to logarithms; hence for $\eps\gtrsim M_fD/\sqrt d$ condition \eqref{eq:cond} is tight in both parameters.
 \end{corollary}
 
 A smoothed step (``ramp'') $\psi(x)=\Delta\clip(M\ip ux/\Delta,-1,1)$ lies in both $\cN(M,0)$ and $\cN(0,2\Delta)$, so \cref{thm:upper} applies if \emph{either} $M\le\eps/(6D)$ \emph{or} $2\Delta\le\eps^2/(9\sqrt dM_fD)$: the harmless region in the (amplitude, slope) plane is L-shaped (\cref{fig:phase}).
